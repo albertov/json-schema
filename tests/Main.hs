@@ -271,7 +271,7 @@ case_constructorWithMaybeField = do
   valid b
 
 #if MIN_VERSION_aeson(0,10,0)
-  eq (Left "Error in $: expected Int, encountered Boolean" :: Either String X)
+  eq (Left "Error in $: parsing Int failed, expected Number, but encountered Boolean" :: Either String X)
      (eitherDecode "[true,2]")
 #else
   eq (Left "when expecting a Int, encountered Boolean instead" :: Either String X)

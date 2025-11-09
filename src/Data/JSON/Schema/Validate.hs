@@ -1,5 +1,6 @@
 {-# LANGUAGE
-    GeneralizedNewtypeDeriving
+    CPP
+  , GeneralizedNewtypeDeriving
   , ScopedTypeVariables
   #-}
 module Data.JSON.Schema.Validate
@@ -14,14 +15,24 @@ import Prelude.Compat
 import Control.Monad.Compat
 import Control.Monad.RWS.Strict (MonadReader, MonadWriter, RWS, ask, local, runRWS, tell)
 import Data.Aeson (Value)
-import Data.HashMap.Strict (HashMap)
 import Data.Scientific
 import Data.Text (Text)
 import Data.Vector (Vector)
 import qualified Data.Aeson          as A
-import qualified Data.HashMap.Strict as H
 import qualified Data.Text           as T
 import qualified Data.Vector         as V
+
+#if MIN_VERSION_aeson(2,0,0)
+-- aeson 2.x uses KeyMap instead of HashMap
+import qualified Data.Aeson.Key      as Key
+import qualified Data.Aeson.KeyMap   as H
+import           Data.HashMap.Strict (HashMap)
+import qualified Data.HashMap.Strict as HM
+#else
+import           Data.HashMap.Strict (HashMap)
+import qualified Data.HashMap.Strict as H
+import qualified Data.HashMap.Strict as HM
+#endif
 
 import Data.JSON.Schema (Schema)
 import qualified Data.JSON.Schema as S
@@ -89,7 +100,11 @@ validate' sch val = case (sch, val) of
          [(0::Int)..] xs (V.toList vs)
   ( S.Map      x, A.Object h ) ->
     do let kvs = H.toList h
+#if MIN_VERSION_aeson(2,0,0)
+       mapM_ (\(k,v) -> nestPath (Key.toText k) $ validate' x v) kvs
+#else
        mapM_ (\(k,v) -> nestPath k $ validate' x v) kvs
+#endif
   ( S.Object  fs, A.Object h ) -> mapM_ (`validateField` h) fs
   ( S.Choice   s, _          ) ->
     do let errs = map (`validate` val) s
@@ -115,15 +130,19 @@ validate' sch val = case (sch, val) of
   ( S.Array   {}, _          ) -> err $ Mismatch sch val
 
 validateField :: S.Field -> A.Object -> M ()
+#if MIN_VERSION_aeson(2,0,0)
+validateField f o = maybe req (nestPath (S.key f) . validate' (S.content f)) $ H.lookup (Key.fromText (S.key f)) o
+#else
 validateField f o = maybe req (nestPath (S.key f) . validate' (S.content f)) $ H.lookup (S.key f) o
+#endif
   where
     req | not (S.required f) = ok
         | otherwise          = err $ MissingRequiredField (S.key f)
 
 unique :: Vector Value -> M ()
 unique vs = do
-  let dups = H.filter (>= 2) . V.foldl' (\h v -> H.insertWith (+) v 1 h) H.empty $ vs
-  unless (H.null dups) $
+  let dups = HM.filter (>= 2) . V.foldl' (\h v -> HM.insertWith (+) v 1 h) HM.empty $ vs
+  unless (HM.null dups) $
     err (NonUniqueArray dups)
 
 inLower :: S.Bound -> Scientific -> M ()

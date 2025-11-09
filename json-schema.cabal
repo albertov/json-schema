@@ -72,6 +72,7 @@ test-suite json-schema-generic-aeson-tests
     , base-compat-batteries == 0.10.*
     , aeson >= 0.9 && < 1.5
     , attoparsec >= 0.10 && < 0.14
+    , attoparsec-aeson >= 2.0
     , bytestring >= 0.10 && < 0.12
     , generic-aeson == 0.2.*
     , json-schema
