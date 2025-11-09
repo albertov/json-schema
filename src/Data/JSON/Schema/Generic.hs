@@ -112,7 +112,7 @@ instance (Selector c, GJSONSchema f) => GJSONSchema (M1 S c f) where
       wrap = maybe id (`field` True) $ selNameT set (undefined :: M1 S c f p)
 
 toConstant :: Settings -> Text -> Schema
-toConstant set = Constant . Aeson.String . formatLabel set
+toConstant set = Constant . Aeson.String
 
 
 pv :: Proxy a -> a
