@@ -26,6 +26,7 @@ import Example ()
 import Test.Util
 import qualified Data.JSON.Schema as S
 import qualified Test.Validate as Validate
+import qualified Test.ToJSON as ToJSON
 
 data SingleCons = SingleCons deriving (Generic, Show, Eq)
 instance ToJSON   SingleCons where toJSON    = gtoJson
@@ -352,4 +353,4 @@ tests = $testGroupGenerator
 
 main :: IO ()
 main = do
-  defaultMain $ testGroup "generic-aeson" [tests, Validate.tests]
+  defaultMain $ testGroup "generic-aeson" [tests, Validate.tests, ToJSON.tests]
